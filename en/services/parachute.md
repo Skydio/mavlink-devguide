@@ -9,13 +9,13 @@ The parachute protocol allows MAVLink control over the behavior of a parachute t
 
 These parachutes have built-in MAVLink support:
 
-- AVSS Parachute for X10
+- AVSS Parachute for Skydio X10
 
 ## Message/Enum Summary
 
 | Message                                                                                                              | Description               |
 | ------------------------------------------------------------------------------------------------------------------ | ------------------------- |
-| <span id="PARACHUTE_STATUS"></span>[PARACHUTE_STATUS](../messages/common.md#PARACHUTE_STATUS)                                           | Current status of the parachute. Recommended to publish this at a regular rate.  
+| <span id="PARACHUTE_STATUS"></span>[PARACHUTE_STATUS](../messages/common.md#PARACHUTE_STATUS)                                           | Current status of the parachute. Recommended to publish this at a regular rate (nominally at 1Hz).  
 | <span id="MAV_CMD_SET_PARACHUTE_ARM"></span>[MAV_CMD_SET_PARACHUTE_ARM](../messages/common.md#MAV_CMD_SET_PARACHUTE_ARM)                | Command to arm/disarm parachute module trigger sources.|
 
 | Enum Values                                                                                                              | Description               |
@@ -38,7 +38,9 @@ These parachutes have built-in MAVLink support:
 Parachutes are expected to follow the [Heartbeat/Connection Protocol](https://github.com/mavlink/mavlink-devguide/blob/master/en/services/heartbeat.md) and send a constant flow of heartbeats (nominally at 1Hz). Parachutes are identified via their type [MAV_TYPE_PARACHUTE](#MAV_TYPE_PARACHUTE).
 Individual parachutes are distinguished via their unique component ID, which by default should be [MAV_COMP_ID_PARACHUTE](#MAV_COMP_ID_PARACHUTE) (though this is not mandated and any ID may be used).
 
-Once a heartbeat is received, the drone can then send a [MAV_CMD_REQUEST_MESSAGE](https://mavlink.io/en/messages/common.html#MAV_CMD_REQUEST_MESSAGE) command to the parachute to receive information about its status. [MAV_CMD_SET_PARACHUTE_ARM](#MAV_CMD_SET_PARACHUTE_ARM) can also then be sent to configure the arming status of the various possible trigger mechanisms of the parachute. 
+Once a heartbeat is received, the drone can then send a [MAV_CMD_REQUEST_MESSAGE](https://mavlink.io/en/messages/common.html#MAV_CMD_REQUEST_MESSAGE) command to the parachute to receive information about its status via [PARACHUTE_STATUS](#PARACHUTE_STATUS) or about its component information via [COMPONENT_INFORMATION_BASIC](.../messages/common.md#COMPONENT_INFORMATION_BASIC). 
+
+[MAV_CMD_SET_PARACHUTE_ARM](#MAV_CMD_SET_PARACHUTE_ARM) can also then be sent to configure the arming status of the various possible trigger mechanisms of the parachute. 
 
 
 ### STATUS
@@ -60,45 +62,49 @@ The parameter list can be found below:
 [PARACHUTE_ERROR_FLAGS](#PARACHUTE_ERROR_FLAGS) is a bitmask that details the various critical errors that may occur within the parachute module or within the communication between the parachute and the drone. This is published in the [PARACHUTE_STATUS](#PARACHUTE_STATUS) message.
 
 A list of the various errors can be found below:
-| Value    | Parameter                                    | Description                                                                                                     |
-|----------|----------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
-| 1        | `PARACHUTE_ERROR_FLAGS_BAROMETER_ERROR`      | There is an error with the parachute barometer.                                                                  |
-| 2        | `PARACHUTE_ERROR_FLAGS_IMU_ERROR`            | There is an error with the parachute IMU.                                                                        |
-| 4        | `PARACHUTE_ERROR_FLAGS_RF_CONNECTION_ERROR`  | There is an error with the parachute's RF that is used for manual control.                                       |
-| 8        | `PARACHUTE_ERROR_FLAGS_LOW_POWER`            | Parachute module has low power.                                                                                  |
-| 16       | `PARACHUTE_ERROR_FLAGS_FC_CONNECTION_ERROR`  | There is an error with the connection between parachute and flight controller (FC).                              |
-| 32       | `PARACHUTE_ERROR_FLAGS_EFTS_CONNECTION_ERROR`| There is an error with the connection between parachute and Electrical Flight Termination System (EFTS).         |
-| 64       | `PARACHUTE_ERROR_FLAGS_POD_CONNECTION_ERROR` | There is an error with the parachute pod.                                                                        |
-| 128      | `PARACHUTE_ERROR_FLAGS_EFTS_DIAGNOSE`        | Parachute Electrical Flight Termination System (EFTS) diagnosis failed.                                          |
-| 256      | `PARACHUTE_ERROR_FLAGS_CHARGING_FAILED`      | Parachute module charging failed.                                                                                |
-| 512      | `PARACHUTE_ERROR_FLAGS_EXTERNAL_POWER_ERROR` | There is an error with the parachute external power source.                                                      |
-| 1024     | `PARACHUTE_ERROR_FLAGS_GS_CONNECTION_ERROR`  | There is an error with the connection between parachute and Ground Station (GS).                                 |
-| 2048     | `PARACHUTE_ERROR_FLAGS_GPS_ERROR`            | There is an error with the parachute's GPS.                                                                      |
-| 4096     | `PARACHUTE_ERROR_FLAGS_SUBSYSTEM_CONNECTION_ERROR` | There is an error with the connection between parachute and subsystem (e.g. remote controller, expansion board, etc.). |
-| 8192     | `PARACHUTE_ERROR_FLAGS_SUBSYSTEM_FW_ERROR`   | There is an error with the parachute subsystem firmware (e.g. wrong firmware version).                           |
-| 16384    | `PARACHUTE_ERROR_FLAGS_RESERVED_1`           | Reserved for future use.                                                                                         |
-| 32768    | `PARACHUTE_ERROR_FLAGS_RESERVED_2`           | Reserved for future use.                                                                                         |
-| 65536    | `PARACHUTE_ERROR_FLAGS_LOGGING_ERROR`        | There is an error with the parachute's internal logging system.                                                  |
-| 131072   | `PARACHUTE_ERROR_FLAGS_MODULE_RETIRED`       | This parachute module is retired (i.e. too many deployments).                                                    |
-| 262144   | `PARACHUTE_ERROR_FLAGS_GLOW_WIRE_ERROR`      | There is an error with the parachute glow wire.                                                                  |
-| 524288   | `PARACHUTE_ERROR_FLAGS_OFFBOARD_CONNECTION_ERROR` | There is an error with the MAVLink connection between parachute and offboard computer.                        |
-| 1048576  | `PARACHUTE_ERROR_FLAGS_IMU_CALIBRATION_ERROR`| Parachute's internal IMU calibration failed.                                                                     |
+| Bit | Value    | Parameter                                      | Description                                                                                                               |
+|-----|----------|------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
+| 0   | 1        | `PARACHUTE_ERROR_FLAGS_BAROMETER_ERROR`        | There is an error with the parachute barometer.                                                                            |
+| 1   | 2        | `PARACHUTE_ERROR_FLAGS_IMU_ERROR`              | There is an error with the parachute IMU.                                                                                  |
+| 2   | 4        | `PARACHUTE_ERROR_FLAGS_RF_CONNECTION_ERROR`    | There is an error with the parachute's RF connection that is used for manual control.                                      |
+| 3   | 8        | `PARACHUTE_ERROR_FLAGS_LOW_POWER`              | Parachute module has low power.                                                                                            |
+| 4   | 16       | `PARACHUTE_ERROR_FLAGS_FC_CONNECTION_ERROR`    | There is an error with the connection between parachute and flight controller (FC).                                        |
+| 5   | 32       | `PARACHUTE_ERROR_FLAGS_EFTS_CONNECTION_ERROR`  | There is an error with the connection between parachute and Electrical Flight Termination System (EFTS).                   |
+| 6   | 64       | `PARACHUTE_ERROR_FLAGS_POD_CONNECTION_ERROR`   | There is an error with the parachute pod.                                                                                  |
+| 7   | 128      | `PARACHUTE_ERROR_FLAGS_EFTS_DIAGNOSE`          | Parachute Electrical Flight Termination System (EFTS) diagnosis failed.                                                    |
+| 8   | 256      | `PARACHUTE_ERROR_FLAGS_CHARGING_FAILED`        | Parachute module charging failed.                                                                                          |
+| 9   | 512      | `PARACHUTE_ERROR_FLAGS_EXTERNAL_POWER_ERROR`   | There is an error with the parachute external power source.                                                                |
+| 10  | 1024     | `PARACHUTE_ERROR_FLAGS_GS_CONNECTION_ERROR`    | There is an error with the connection between parachute and Ground Station (GS).                                           |
+| 11  | 2048     | `PARACHUTE_ERROR_FLAGS_GPS_ERROR`              | There is an error with the parachute's GPS.                                                                                |
+| 12  | 4096     | `PARACHUTE_ERROR_FLAGS_SUBSYSTEM_CONNECTION_ERROR` | There is an error with the connection between parachute and subsystem (e.g. remote controller, expansion board, etc.). |
+| 13  | 8192     | `PARACHUTE_ERROR_FLAGS_SUBSYSTEM_FW_ERROR`     | There is an error with the parachute subsystem firmware (e.g. wrong firmware version).                                     |
+| 14  | 16384    | `PARACHUTE_ERROR_FLAGS_RESERVED_1`             | Reserved for future use.                                                                                                   |
+| 15  | 32768    | `PARACHUTE_ERROR_FLAGS_RESERVED_2`             | Reserved for future use.                                                                                                   |
+| 16  | 65536    | `PARACHUTE_ERROR_FLAGS_LOGGING_ERROR`          | There is an error with the parachute's internal logging system.                                                            |
+| 17  | 131072   | `PARACHUTE_ERROR_FLAGS_MODULE_RETIRED`         | This parachute module is retired (i.e. too many deployments).                                                              |
+| 18  | 262144   | `PARACHUTE_ERROR_FLAGS_GLOW_WIRE_ERROR`        | There is an error with the parachute glow wire.                                                                            |
+| 19  | 524288   | `PARACHUTE_ERROR_FLAGS_OFFBOARD_CONNECTION_ERROR` | There is an error with the MAVLink connection between parachute and offboard computer.                                 |
+| 20  | 1048576  | `PARACHUTE_ERROR_FLAGS_IMU_CALIBRATION_ERROR`  | Parachute's internal IMU calibration failed.                                                                               |
+                                                                    |
 
+[PARACHUTE_ERROR_FLAGS_IMU_ERROR](#PARACHUTE_ERROR_FLAGS_IMU_ERROR) is typically used to indicate a hardware failure of the onboard IMU, and [PARACHUTE_ERROR_FLAGS_IMU_CALIBRATION_ERROR](#PARACHUTE_ERROR_FLAGS_IMU_CALIBRATION_ERROR) may indicate that IMU has no calibration or needs re-calibration.
+
+Depending on the parachute product, not all errors may be applicable. For example, [PARACHUTE_ERROR_FLAGS_LOW_POWER](#PARACHUTE_ERROR_FLAGS_LOW_POWER) would be used if there was an additional power source within the parachute module itself that has its power level monitored. 
 
 #### MAV_CMD_SET_PARACHUTE_ARM
 This command can be used to arm/disarm the various parachute trigger sources. By configuring the arm/disarm setting of the various trigger sources, a user is able to change the behavior of the parachute when it is being used. The operation follows the normal [Command Protocol](https://github.com/mavlink/mavlink-devguide/blob/master/en/services/command.md) rules for command/acknowledgment.
 
-There are two parameters for this command. The first parameter is used to indicate the arm/disarm setting. Setting a bit to "0" indicated disarm and setting a bit to "1" indicates arm. The second parameter is a mask-byte that indicates which trigger source is being configured. The bits of the second parameter are mapped to [PARACHUTE_TRIGGER_FLAGS](#PARACHUTE_TRIGGER_FLAGS). The second parameter allows users to not have to track the status of all trigger sources when you want to set arm/disarm for specific sources. 
+There are two parameters for this command. The first parameter is used to indicate the arm/disarm setting. Setting a bit to "0" indicates disarm and setting a bit to "1" indicates arm. The second parameter is a bitmask that indicates which trigger source is being configured. The bits of both parameters are mapped to [PARACHUTE_TRIGGER_FLAGS](#PARACHUTE_TRIGGER_FLAGS). The parachute will ignore all bit positions in the first parameter that are set to zero in the second parameter, which allows the user to granularly arm/disarm specific sources individually.
 
 For example, the user wants to arm the automatic trigger system and flight controller trigger, and the user wants to disarm the manual and geofence trigger. 
-- The first parameter would be `0b01100`.
+- The first parameter would be `0bxxx0x110`.
    - Bit 0 for `PARACHUTE_TRIGGER_FLAGS_MANUAL` is set to "0" to disarm.
    - Bit 1 for `PARACHUTE_TRIGGER_FLAGS_ATS` is set to "1" to arm.
    - Bit 2 for `PARACHUTE_TRIGGER_FLAGS_FC` is set to "1" to arm.
    - Bit 4 for `PARACHUTE_TRIGGER_FLAGS_GEOFENCE` is set to "0" to disarm.
-- The second parameter would be `0b11001`.
+- The second parameter would be `0b00010111`.
    - Since bit 0, 1, 2, and 4 are being configured and no other trigger sources are being configured, all of those bits are set to "1" to indicate that those specific trigger sources need their arm statuses to be updated.
-   - Although bit 3 in the first parameter is set to "0", since bit 3 is set to "0" in the second parameter, the parachute should ignore the bit in the first parameter and not change the arm/disarm status of the trigger source mapped to bit 3.
+   - All other bits, such as bit 3, are ignored. The parachute should not change the arm/disarm status of the trigger source mapped to bit 3.
 
 
 ##### PARACHUTE_TRIGGER_FLAGS
@@ -145,6 +151,7 @@ A breakdown of the bitmask can be found below:
 | 2     | `PARACHUTE_SAFETY_FLAGS_ON_GROUND`                    | The parachute's own sensor has confirmed it is stably on the ground.              |
 | 4     | `PARACHUTE_SAFETY_FLAGS_GEOFENCE_MISSION_SET`         | The parachute module has downloaded geofence mission successfully and can be triggered by geofence source. |
 
+[PARACHUTE_SAFETY_FLAGS_GROUND_CLEARED](#PARACHUTE_SAFETY_FLAGS_GROUND_CLEARED) flag is raised depending on the parachute and the inputs defined by the developer/user. This is typically used to block deployment until a desired altitiude is reached. 
 
 ## Test Script
 
@@ -154,5 +161,5 @@ The test suite included in `parachute.py` allows for testing both sides of the p
 
 ##### Instructions
 
-1. Run simple parachute emulator `python3 parachute.py`
+1. Run parachute emulator `python3 parachute.py`
 2. Run test `python3 -m unittest -v test_parachute.py`
