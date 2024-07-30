@@ -85,44 +85,11 @@ A list of the various errors can be found below:
 | 18  | 262144   | `PARACHUTE_ERROR_FLAGS_GLOW_WIRE_ERROR`        | There is an error with the parachute glow wire.                                                                            |
 | 19  | 524288   | `PARACHUTE_ERROR_FLAGS_OFFBOARD_CONNECTION_ERROR` | There is an error with the MAVLink connection between parachute and offboard computer.                                 |
 | 20  | 1048576  | `PARACHUTE_ERROR_FLAGS_IMU_CALIBRATION_ERROR`  | Parachute's internal IMU calibration failed.                                                                               |
-                                                                    |
+
 
 [PARACHUTE_ERROR_FLAGS_IMU_ERROR](#PARACHUTE_ERROR_FLAGS_IMU_ERROR) is typically used to indicate a hardware failure of the onboard IMU, and [PARACHUTE_ERROR_FLAGS_IMU_CALIBRATION_ERROR](#PARACHUTE_ERROR_FLAGS_IMU_CALIBRATION_ERROR) may indicate that IMU has no calibration or needs re-calibration.
 
 Depending on the parachute product, not all errors may be applicable. For example, [PARACHUTE_ERROR_FLAGS_LOW_POWER](#PARACHUTE_ERROR_FLAGS_LOW_POWER) would be used if there was an additional power source within the parachute module itself that has its power level monitored. 
-
-#### MAV_CMD_SET_PARACHUTE_ARM
-This command can be used to arm/disarm the various parachute trigger sources. By configuring the arm/disarm setting of the various trigger sources, a user is able to change the behavior of the parachute when it is being used. The operation follows the normal [Command Protocol](https://github.com/mavlink/mavlink-devguide/blob/master/en/services/command.md) rules for command/acknowledgment.
-
-There are two parameters for this command. The first parameter is used to indicate the arm/disarm setting. Setting a bit to "0" indicates disarm and setting a bit to "1" indicates arm. The second parameter is a bitmask that indicates which trigger source is being configured. The bits of both parameters are mapped to [PARACHUTE_TRIGGER_FLAGS](#PARACHUTE_TRIGGER_FLAGS). The parachute will ignore all bit positions in the first parameter that are set to zero in the second parameter, which allows the user to granularly arm/disarm specific sources individually.
-
-For example, the user wants to arm the automatic trigger system and flight controller trigger, and the user wants to disarm the manual and geofence trigger. 
-- The first parameter would be `0bxxx0x110`.
-   - Bit 0 for `PARACHUTE_TRIGGER_FLAGS_MANUAL` is set to "0" to disarm.
-   - Bit 1 for `PARACHUTE_TRIGGER_FLAGS_ATS` is set to "1" to arm.
-   - Bit 2 for `PARACHUTE_TRIGGER_FLAGS_FC` is set to "1" to arm.
-   - Bit 4 for `PARACHUTE_TRIGGER_FLAGS_GEOFENCE` is set to "0" to disarm.
-- The second parameter would be `0b00010111`.
-   - Since bit 0, 1, 2, and 4 are being configured and no other trigger sources are being configured, all of those bits are set to "1" to indicate that those specific trigger sources need their arm statuses to be updated.
-   - All other bits, such as bit 3, are ignored. The parachute should not change the arm/disarm status of the trigger source mapped to bit 3.
-
-
-##### PARACHUTE_TRIGGER_FLAGS
-
-[PARACHUTE_TRIGGER_FLAGS](#PARACHUTE_TRIGGER_FLAGS) is a bitmask that is used in the parameters of the [MAV_CMD_SET_PARACHUTE_ARM](#MAV_CMD_SET_PARACHUTE_ARM) command and is published in the [PARACHUTE_STATUS](#PARACHUTE_STATUS) message. When published in the [PARACHUTE_STATUS](#PARACHUTE_STATUS) message, the bitmask details the various arm/disarm states of all the trigger flags.
-
-A list of the various flags can be found below:
-
-| Bit| Value  | Parameter                                      | Description                                                                                                            |
-|----|--------|------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
-| 0  | 1      | `PARACHUTE_TRIGGER_FLAGS_MANUAL`              | Manual trigger (ground based control via parachute-specific RF channel)                                                |
-| 1  | 2      | `PARACHUTE_TRIGGER_FLAGS_ATS`                 | Automatic trigger system (ATS)                                                                                         |
-| 2  | 4      | `PARACHUTE_TRIGGER_FLAGS_FC`                  | Flight controller trigger (e.g. MAVLink from FC, PWM, DroneCan, RC Control)                                            |
-| 3  | 8      | `PARACHUTE_TRIGGER_FLAGS_OFFBOARD`            | Offboard computer trigger (via MAVLink)                                                                                |
-| 4  | 16     | `PARACHUTE_TRIGGER_FLAGS_GEOFENCE`            | Geofence trigger (by parachute). Parachute uses MAVLink mission protocol to fetch geofence.                            |
-| 5  | 32     | `PARACHUTE_TRIGGER_FLAGS_FTS_PRECHECKING`     | FTS (flight termination system) pre-checking protocol trigger                                                          |
-| 6  | 64     | `PARACHUTE_TRIGGER_FLAGS_ATS_AUTO_ARM`        | Auto-arming of parachute automatic trigger system (ATS). This allows a parachute to enable ATS after reaching a desired altitude. |
-| 7  | 128    | `PARACHUTE_TRIGGER_FLAGS_ATS_AUTO_DISARM`     | Auto-disarming of parachute automatic trigger system (ATS). This allows a parachute to disable ATS after detecting that it is below a desired altitude. |
 
 #### PARACHUTE_DEPLOYMENT_TRIGGER
 [PARACHUTE_DEPLOYMENT_TRIGGER](#PARACHUTE_DEPLOYMENT_TRIGGER) is an enum that details out the deployment status of the parachute. This enum is set to "0" when the parachute has not been deployed. All other enum values indicate that the parachute has deployed and by which source. This is published in the [PARACHUTE_STATUS](#PARACHUTE_STATUS) message.
@@ -152,6 +119,40 @@ A breakdown of the bitmask can be found below:
 | 4     | `PARACHUTE_SAFETY_FLAGS_GEOFENCE_MISSION_SET`         | The parachute module has downloaded geofence mission successfully and can be triggered by geofence source. |
 
 [PARACHUTE_SAFETY_FLAGS_GROUND_CLEARED](#PARACHUTE_SAFETY_FLAGS_GROUND_CLEARED) flag is raised depending on the parachute and the inputs defined by the developer/user. This is typically used to block deployment until a desired altitiude is reached. 
+
+### MAV_CMD_SET_PARACHUTE_ARM
+This command can be used to arm/disarm the various parachute trigger sources. By configuring the arm/disarm setting of the various trigger sources, a user is able to change the behavior of the parachute when it is being used. The operation follows the normal [Command Protocol](https://github.com/mavlink/mavlink-devguide/blob/master/en/services/command.md) rules for command/acknowledgment.
+
+There are two parameters for this command. The first parameter is used to indicate the arm/disarm setting. Setting a bit to "0" indicates disarm and setting a bit to "1" indicates arm. The second parameter is a bitmask that indicates which trigger source is being configured. The bits of both parameters are mapped to [PARACHUTE_TRIGGER_FLAGS](#PARACHUTE_TRIGGER_FLAGS). The parachute will ignore all bit positions in the first parameter that are set to zero in the second parameter, which allows the user to granularly arm/disarm specific sources individually.
+
+For example, the user wants to arm the automatic trigger system and flight controller trigger, and the user wants to disarm the manual and geofence trigger. 
+- The first parameter would be `0bxxx0x110`.
+   - Bit 0 for `PARACHUTE_TRIGGER_FLAGS_MANUAL` is set to "0" to disarm.
+   - Bit 1 for `PARACHUTE_TRIGGER_FLAGS_ATS` is set to "1" to arm.
+   - Bit 2 for `PARACHUTE_TRIGGER_FLAGS_FC` is set to "1" to arm.
+   - Bit 4 for `PARACHUTE_TRIGGER_FLAGS_GEOFENCE` is set to "0" to disarm.
+- The second parameter would be `0b00010111`.
+   - Since bit 0, 1, 2, and 4 are being configured and no other trigger sources are being configured, all of those bits are set to "1" to indicate that those specific trigger sources need their arm statuses to be updated.
+   - All other bits, such as bit 3, are ignored. The parachute should not change the arm/disarm status of the trigger source mapped to bit 3.
+
+
+#### PARACHUTE_TRIGGER_FLAGS
+
+[PARACHUTE_TRIGGER_FLAGS](#PARACHUTE_TRIGGER_FLAGS) is a bitmask that is used in the parameters of the [MAV_CMD_SET_PARACHUTE_ARM](#MAV_CMD_SET_PARACHUTE_ARM) command and is published in the [PARACHUTE_STATUS](#PARACHUTE_STATUS) message. When published in the [PARACHUTE_STATUS](#PARACHUTE_STATUS) message, the bitmask details the various arm/disarm states of all the trigger flags.
+
+A list of the various flags can be found below:
+
+| Bit| Value  | Parameter                                      | Description                                                                                                            |
+|----|--------|------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| 0  | 1      | `PARACHUTE_TRIGGER_FLAGS_MANUAL`              | Manual trigger (ground based control via parachute-specific RF channel)                                                |
+| 1  | 2      | `PARACHUTE_TRIGGER_FLAGS_ATS`                 | Automatic trigger system (ATS)                                                                                         |
+| 2  | 4      | `PARACHUTE_TRIGGER_FLAGS_FC`                  | Flight controller trigger (e.g. MAVLink from FC, PWM, DroneCan, RC Control)                                            |
+| 3  | 8      | `PARACHUTE_TRIGGER_FLAGS_OFFBOARD`            | Offboard computer trigger (via MAVLink)                                                                                |
+| 4  | 16     | `PARACHUTE_TRIGGER_FLAGS_GEOFENCE`            | Geofence trigger (by parachute). Parachute uses MAVLink mission protocol to fetch geofence.                            |
+| 5  | 32     | `PARACHUTE_TRIGGER_FLAGS_FTS_PRECHECKING`     | FTS (flight termination system) pre-checking protocol trigger                                                          |
+| 6  | 64     | `PARACHUTE_TRIGGER_FLAGS_ATS_AUTO_ARM`        | Auto-arming of parachute automatic trigger system (ATS). This allows a parachute to enable ATS after reaching a desired altitude. |
+| 7  | 128    | `PARACHUTE_TRIGGER_FLAGS_ATS_AUTO_DISARM`     | Auto-disarming of parachute automatic trigger system (ATS). This allows a parachute to disable ATS after detecting that it is below a desired altitude. |
+
 
 ## Test Script
 
