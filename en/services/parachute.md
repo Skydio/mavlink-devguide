@@ -138,7 +138,7 @@ For example, the user wants to arm the automatic trigger system and flight contr
 
 #### PARACHUTE_TRIGGER_FLAGS
 
-[PARACHUTE_TRIGGER_FLAGS](#PARACHUTE_TRIGGER_FLAGS) is a bitmask that is used in the parameters of the [MAV_CMD_SET_PARACHUTE_ARM](#MAV_CMD_SET_PARACHUTE_ARM) command and is published in the [PARACHUTE_STATUS](#PARACHUTE_STATUS) message. When published in the [PARACHUTE_STATUS](#PARACHUTE_STATUS) message, the bitmask details the various arm/disarm states of all the trigger flags.
+[PARACHUTE_TRIGGER_FLAGS](#PARACHUTE_TRIGGER_FLAGS) is a bitmask that is used in the parameters of the [MAV_CMD_SET_PARACHUTE_ARM](#MAV_CMD_SET_PARACHUTE_ARM) command and is published in the [PARACHUTE_STATUS](#PARACHUTE_STATUS) message. When published in the [PARACHUTE_STATUS](#PARACHUTE_STATUS) message, the bitmask details the various arm/disarm states of all the trigger flags. Please note that the implementation of the auto-arm and auto-disarm conditions are developer-specific.
 
 A list of the various flags can be found below:
 
@@ -158,7 +158,7 @@ A list of the various flags can be found below:
 
 #### Description
 
-The test suite included in `parachute.py` allows for testing both sides of the parachute communication interaction. The first script `parachute.py` will emulate a standard parachute module. The second script will run a standard test suite against the emulator, testing all commands listed in this document.
+The test suite included in `test_parachute.py` allows for testing both sides of the parachute communication interaction. The first script `parachute.py` will emulate a standard parachute module. The second script will run a standard test suite against the emulator, testing all commands listed in this document.
 
 ##### Instructions
 
